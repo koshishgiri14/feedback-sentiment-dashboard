@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title> We would love your feedback! </title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+    :root {
+        --ink: #1B2430;
+        --paper: #FAF9F6;
+        --teal: #0F6B5C;
+        --gold: #C9A227;
+        --grey: #6B7280;
+        --border: #E5E2DA;     
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+        font-family: 'Inter', sans-serif;
+        background: var(--paper);
+        color: var(--ink);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        padding: 24px;
+    }
+
+    .card {
+        background: #fff;
+        border-radius: 16px;
+        padding: 40px 36px;
+        max-width: 440px;
+        width: 100%;
+        box-shadow: 0 20px 60px -15px rgba(27, 36, 48, 0.15);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .card::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, var(--teal), var(--gold));
+
+    }
+
+    h1 {
+        font-family: 'Fraunces', serif;
+        font-weight: 600;
+        font-size: 26px;
+        letter-spacing: -0.01em;
+        margin-bottom: 6px;
+    }
+
+    p.sub {
+        color: var(--grey);
+        font-size: 14px;
+        margin-bottom: 28px;
+    }
+
+    label {
+        display: block;
+        font-weight: 600;
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: var(--grey);
+        margin-bottom: 10px;
+    }
+
+    .stars { display: flex; gap: 8px; margin-bottom: 24px; }
+
+    .star {
+        font-size: 30px;
+        cursor: pointer;
+        color: var(--border);
+        transition: color 0.2s ease, transform 0.15s ease;
+    }
+
+    .star:hover { transform: scale(1.15); }
+    .star.active { color: var(--gold);}
+
+    textarea {
+        width: 100%;
+        min-height: 110px;
+        padding: 14px;
+        border: 1.5px solid var(--border);
+        border-radius: 10px;
+        font-family: 'Inter', sans-serif;
+        font-size: 14px;
+        color: var(--ink);
+        resize: vertical;
+        transition: border-color 0.2s ease;
+
+    }
+
+    textarea:focus {
+        outline: none;
+        border-color: var(--teal);
+
+    }
+
+     button {
+    margin-top: 20px;
+    width: 100%;
+    padding: 14px;
+    background: var(--ink);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+
+  button:hover { background: var(--teal); }
+  button:disabled { background: var(--border); cursor: not-allowed; }
+
+  #status { margin-top: 16px; font-size: 14px; text-align: center; font-weight: 500; }
+  #status.success { color: var(--teal); }
+  #status.error { color: #C0392B; }
+</style>
+
+
+</head>
+
+<body>
+
+<div class="card">
+    <h1> How was your experience? </h1>
+    <p class="sub"> Your feedback helps us improve! </p>
+
+    <form id="feedback-form">
+        <label> Rating </label>
+        <div class="stars" id="stars">
+            <span class="star" data-value="1">★</span>
+            <span class="star" data-value="2">★</span>
+            <span class="star" data-value="3">★</span>
+            <span class="star" data-value="4">★</span>
+            <span class="star" data-value="5">★</span>
+        </div>
+
+        <label for="comment"> Comments </label>
+        <textarea id="comment" placeholder=" Tell us what you liked or what we can improve on! "></textarea>
+
+        <button type="submit" id="submit-btn"> Submit Feedback</button>
+        <div id="status"></div>
+    </form>
+</div>
+
+<script> 
+    let selectedRating = 0;
+    const starEls = document.querySelectorAll('.star');
+    const statusEl = document.getElementById('status');
+    const submitBtn = document.getElementById('submit-btn');
+
+    starEls.forEach(star => {
+        star .addEventListener('click', () => {
+            selectedRating = parseInt(star.dataset.value);
+            starEls.forEach(s => {
+                s.classList.toggle('active', parseInt(s.dataset.value) <= selectedRating);
+            });
+        });
+    });
+
+    document.getElementById('feedback-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        statusEl.textContent = '';
+        statusEl.className = '';
+
+        const comment = document.getElementById('comment').value.trim();
+
+        if (selectedRating === 0) {
+            statusEl.textContent = 'Please select a star rating.';
+            statusEl.className = 'error';
+            return;
+        }
+        if (!comment) {
+            statusEl.textContent = 'Please add a comment.';
+            statusEl.className = 'error';
+            return;
+        }
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Submitting...';
+
+        try {
+            const res = await fetch('submit_feedback.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ rating: selectedRating, comment: comment })
+            });
+            const data = await res.json();
+
+            if (res.ok) {
+                statusEl.textContent = 'Thank you! Your feedback was submitted!';
+                statusEl.className = 'success';
+                document.getElementById('comment').value = '';
+                selectedRating = 0;
+                starEls.forEach(s => s.classList.remove('active'));
+            }else {
+                statusEl.textContent = data.error || 'Something went wrong';
+                statusEl.className = 'error';
+            }
+        
+        } catch (err) {
+            statusEl.textContent = 'Could not reach the server.';
+            statusEl.className = 'error';
+        }
+
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Submit Feedback';
+    });
+
+
+
+
+</script>
+
+
+
+
+
+
+
+
+</body>
+</html>
+
+
+
+
+
+
+
+
