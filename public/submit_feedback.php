@@ -33,7 +33,18 @@ $stmt = $conn->prepare('INSERT INTO feedback (rating, comment_text) VALUES (?, ?
 $stmt->bind_param('is', $rating, $comment);
 
 if ($stmt->execute()) {
-    echo json_encode(['success' => true, 'id' => $stmt->insert_id]);
+    $new_id = $stmt->insert_id;
+
+    
+    $script_path = escapeshellarg(__DIR__ . '/../scripts/sentiment_analysis.py');
+    $command = "python " . $script_path . " 2>&1";
+    $output = shell_exec($command);
+
+    echo json_encode([
+        'success' => true,
+        'id' => $new_id,
+        'sentiment_log' => $output 
+    ]);
 } else {
     http_response_code(500);
     echo json_encode(['error' => 'Failed to save feedback: ' . $stmt->error]);
